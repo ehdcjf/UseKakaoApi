@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+  
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Api</title>
+  <script type ='text/javascript'>
+  // "https://dapi.kakao.com/v2/local/search/address.json?analyze_type=similar&page=1&size=10&query=%EC%82%BC%EC%A0%84"
+  // HEADER "Authorization: KakaoAK {REST_API_KEY}"
+  //REST API KEY     71331618c1171c650cf362d41c45c97a
+
+
+    document.addEventListener('DOMContentLoaded',init); 
+    async function init(){ 
+      /*  
+      let options = { 
+        method:'GET',
+        headers:{ 
+          "Authorization":"KakaoAK 71331618c1171c650cf362d41c45c97a"
+        }
+      }
+
+   
+      let result = await fetch("https://dapi.kakao.com/v2/local/search/address.json?analyze_type=similar&page=1&size=10&query=서울시 송파구 백제고분로22길 31-9",options)
+      let json = await result.json(); 
+
+      console.log(json); 
+      */
+      const search_btn = document.querySelector("#address_search"); 
+      search_btn.addEventListener('click',getAddress);
+    } 
+
+    async function getAddress(){ 
+      const address_input = document.querySelector('#address_input'); 
+      const address_list = document.querySelector('#address_list');
+      document.querySelector('#address_number').value = ''; 
+      document.querySelector('#address1').value = '';
+      if(address_input.value.length ==0){ 
+        alert('주소를 입력해주세요.'); 
+        address_list.focus(); 
+        return false; 
+      }
+
+      let options = { 
+        method:'GET',
+        headers:{ 
+          "Authorization":"KakaoAK 71331618c1171c650cf362d41c45c97a"
+        }
+      }
+      let result = await fetch(`https://dapi.kakao.com/v2/local/search/address.json?analyze_type=similar&page=1&size=10&query=${address_input.value}`,options)
+      let json = await result.json();
+
+      if(json.documents.length==0){
+        result = await fetch(`https://dapi.kakao.com/v2/local/search/keyword.json?page=1&size=15&sort=accuracy&query=${address_input.value}`,options) 
+        json = await result.json();
+        console.log(json.documents);
+      }
+
+      address_list.innerHTML=''; 
+      if(json.documents.length==0){
+        address_list.innerHTML = "<li>결과값이 존재하지 않습니다</li>."
+        return false; 
+      }
+      json.documents.forEach(ele =>{ 
+        const li = document.createElement('li');
+        li.innerHTML = ele.address_name; 
+        li.dataset.x = ele.x; 
+        li.dataset.y = ele.y; 
+        li.addEventListener('click',getAddressDetail); 
+        address_list.appendChild(li); 
+      })
+    }
+
+    async function getAddressDetail(){ 
+      let x= this.dataset.x;
+      let y= this.dataset.y;
+
+      let options = { 
+        method:'GET',
+        headers:{ 
+          "Authorization":"KakaoAK 71331618c1171c650cf362d41c45c97a"
+        }
+      }
+      let url = `https://dapi.kakao.com/v2/local/geo/coord2address.json?x=${x}&y=${y}`
+      let result = await fetch(url,options)
+      let json = await result.json();
+
+      console.log(json.documents[0].address); 
+
+      if(json.documents[0].road_address===null){
+        let address_name = json.documents[0].address.address_name;
+        document.querySelector('#address1').value = address_name;
+      }
+      else{
+        let zone_no = json.documents[0].road_address.zone_no; //우편번호 
+        let address_name = json.documents[0].road_address.address_name //주소 
+        let building_name = json.documents[0].road_address.building_name //주소 
+        document.querySelector('#address_number').value = zone_no; 
+      document.querySelector('#address1').value = address_name;
+      if(building_name!==undefined){ 
+        document.querySelector('#address1').value+=' '+building_name; 
+      }
+      }
+      
+
+    }
+    
+  </script>
+</head>
+<body>
+  <div>
+    <input type="text" id ="address_input" placeholder="주소를 입력해주세요." >
+    <button id ="address_search">주소검색하기</button>
+    <ul id="address_list">
+    </ul>
+    <input type="text" name ="address_number" id="address_number" placeholder="우편번호">
+    <input type="text" name="address1" id="address1" size='40' placeholder="주소">
+    <input type="text" name="address2" id="address2" size='40' placeholder="상세주소">
+  </div>
+
+  
+</body>
+</html>
